@@ -9,16 +9,18 @@ GenerationalActionCaching allows applications to easily implement generational a
 None
 
 == INSTALLATION
+
 script/plugin install git@github.com:jkupferman/GenerationalActionCaching.git
 
 == SETUP
+
 After installing the plugin, add the following to your application_controller.rb
 
 if ENV["RAILS_ENV"] == "production"
-include GenerationalActionCaching                                                
-around_filter :cache_action                                                                       
-after_filter :increment_generation_on_change
-GenerationalActionCaching.use_commit_hash
+    include GenerationalActionCaching                                                
+    around_filter :cache_action                                                                       
+    after_filter :increment_generation_on_change
+    GenerationalActionCaching.use_commit_hash
 end
 
 
@@ -28,21 +30,21 @@ end
 It is a very simple but effective caching strategy for data. The application has a "generation" which is changed each time the application is changed. The generation is included in the cache key such that when it changes it will cause the next cache read to miss and regenerate the data. For example if the generation is currently 1 then all gets will hit the cache while the generation stays the same. When an update happens, the generation is incremented to 2. Thus the next time the data is read it will miss the cache and be regenerated. It should be noted that by default generational caching does not require data to be expired or deleted from the cache since when the generation is changed stale data is no longer accessed.
 
 2) When is the generation changed?
-By default the generation is changed on any non-get request (e.g. update, create, destroy). If there is a particular action that you do not want to change the cache key, skip the after filter on that action. For example if you dont want the update action to change the generation then add the following to your application_controller.rb.
+By default the generation is changed on any non-get request (e.g. update, create, destroy). If there is a particular action that you do not want to change the cache key, skip the after filter on that action. For example if you don't want the update action to change the generation then add the following to your application_controller.rb.
 
 skip_after_filter :increment_generation_on_change, :only => :update
 
-Similarly, if you dont want the update action to change the generation of a specific controller, simply add the above line to that controller.
+Similarly, if you don't want the update action to change the generation of a specific controller, simply add the above line to that controller.
 
 3)Why on earth are you using a commit hash?
-The answer here is a bit subtle. Imagine you have an application which you start and then perform a get on the index action. It will start by initalizing the generation to 1 (since it was not in the cache before). Similarly, it will miss the cache for the index action since it was not in the cache before. After generating the page it will be written back into the cache. Next you terminate the application, make a code change to the index action, and then start it again. This time it will fetch the generation (which is still 1) and then it will do a lookup in the cache for the index page. Since the generation has not changed it would fetch the cached index page which was generated prior to the code change. This is probably not what you want and would cause the stale page to be displayed. In order to avoid this issue the current commit hash from the version control system is used to cause the key to change. 
+The answer here is a bit subtle. Imagine you have an application which you start and then perform a get on the index action. It will start by initializing the generation to 1 (since it was not in the cache before). Similarly, it will miss the cache for the index action since it was not in the cache before. After generating the page it will be written back into the cache. Next you terminate the application, make a code change to the index action, and then start it again. This time it will fetch the generation (which is still 1) and then it will do a lookup in the cache for the index page. Since the generation has not changed it would fetch the cached index page which was generated prior to the code change. This is probably not what you want and would cause the stale page to be displayed. In order to avoid this issue the current commit hash from the version control system is used to cause the key to change. 
 
-4)What if I dont want to use a commit hash?
+4)What if I don't want to use a commit hash?
 Simply remove the following line from your application_controller.rb
 GenerationalActionCaching.use_commit_hash
 
 5)Does the commit hash update automatically?
-For performance reasons the commit hash is only fetched once when the module is loaded. If running in prodution classes are only loaded once and as a result commit hash will not update until the server (e.g. Mongrel) is restarted. 
+For performance reasons the commit hash is only fetched once when the module is loaded. If running in production classes are only loaded once and as a result commit hash will not update until the server (e.g. Mongrel) is restarted. 
 
 5)What version control systems are supported?
 SVN and git.
